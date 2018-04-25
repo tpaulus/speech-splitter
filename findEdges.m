@@ -1,10 +1,12 @@
-function findEdges(source_file, start, dur, num_words, demo)
+function ms_edges = findEdges(source_file, start, dur, num_words, demo)
 % FINDEDGES find the edges of the words in a given audio clip
 %   source_file - Input Audio File
 %   start - Start time from the caption line
 %   dur - Duration of the caption line
 %   num_words - number of words in the caption line (number of peaks we are
 %               looking for)
+%
+%   Returns vector of edge times relative to the given start time in ms.
 
 if ~exist('demo','var')
     demo = false;
@@ -83,6 +85,8 @@ if demo
     hold off
     grid
 end
+
+ms_edges = edges ./ Fs;
 
 end
 
