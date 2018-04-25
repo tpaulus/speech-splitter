@@ -21,7 +21,6 @@ MIN_PEAK_HEIGHT_INIT = 0.100;
 MIN_PEAK_HEIGHT_STEP = 0.005;
 MIN_PEAK_DISTANCE = Fs * 0.15;
 WINDOW_SIZE = ceil(Fs * 0.01);
-EDGE_EPSILON = -1e-4;
 % ==== End Config ====
 
 % Begin Detection
@@ -40,47 +39,36 @@ while length(dypks) < num_words
     MIN_PEAK_HEIGHT_INIT = MIN_PEAK_HEIGHT_INIT - MIN_PEAK_HEIGHT_STEP;
 end
 
-ddy = gradient(dy, mean(diff(x)));  % Second Dertivitive
-ddy_b =  downsample(dy, WINDOW_SIZE);
-bucket_x = (1:length(ddy_b)) .* WINDOW_SIZE;
+ranges = [0 ix max(x)];
 
-edges = zeros(length(dypks), 2);
+% ddy = gradient(dy, mean(diff(x)));  % Second Dertivitive
+y_b =  downsample(dy, WINDOW_SIZE);
+bucket_x = (1:length(y_b)) .* WINDOW_SIZE;
 
-for p = 1:length(dypks)
-    peak_x = ix(p);
+edges = [0]; % First Edge
+
+%  /*\/*$\/$\
+warning('off', 'MATLAB:polyfit:RepeatedPointsOrRescale');
+for p = 2:length(dypks)   % Skip first and last edge, since they are known
+    l_edge = ranges(p);
+    r_edge = ranges(p+1);
     
-    %    Find Left Edge
-%     i = 1;
-%     while true
-%         if dy_b(floor(peak_x / WINDOW_SIZE) - i) < EDGE_EPSILON
-%             edges(p, 2) = peak_x - i * WINDOW_SIZE;
-%             break
-%         end
-%         
-%         i = i + 1;
-%     end     
-
-    %    Find Right Edge
-    i = 1;
-    while true
-        if ddy_b(floor(peak_x / WINDOW_SIZE) + i) < EDGE_EPSILON
-            edges(p, 2) = peak_x + i * WINDOW_SIZE;
-            break
-        end
-        
-        i = i + 1;
-    end     
+    % There are in theory 2 "edges," hence the fourth-degree polyfit
+    curve = polyfit(l_edge:r_edge,sample(l_edge:r_edge),4);
+    d1a = polyder(curve);              % First derivative of Best Fit Curve
+    ip = roots(d1a);  
+    edges = [edges median(ip) median(ip)]; % Middle Edges
 end
 
+edges = [edges max(x)]; % Last Edge
 
 if demo
     figure(1)
     plot(x, sample)
     hold on
     plot(x, dy)
-    plot(bucket_x, ddy_b)
-%     plot(x(edges(:,1)'), 0, '^b', 'MarkerFaceColor','b')
-    plot(edges(:,2)', 0, '^b', 'MarkerFaceColor','b')
+    plot(bucket_x, y_b)
+    plot(edges', 0, '^b', 'MarkerFaceColor','b')
     plot(x(ix), dypks*1E-9, '^g', 'MarkerFaceColor','g')
     hold off
     grid
