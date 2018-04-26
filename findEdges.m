@@ -12,16 +12,19 @@ if ~exist('demo','var')
     demo = false;
 end
 
-[y, Fs] = audioread(source_file);
-sample = y(floor(Fs * start): ceil(Fs * (start + dur)));
-x = 1:length(sample);
+
 
 % ==== Edge Detection Config ====
 MIN_PEAK_HEIGHT_INIT = 0.100;
 MIN_PEAK_HEIGHT_STEP = 0.005;
 MIN_PEAK_DISTANCE = Fs * 0.15;
 WINDOW_SIZE = ceil(Fs * 0.01);
+TEXT_OFFSET = -3;
 % ==== End Config ====
+
+[y, Fs] = audioread(source_file);
+sample = y(floor(Fs * (start + TEXT_OFFSET)): ceil(Fs * (start + dur + TEXT_OFFSET)));
+x = 1:length(sample);
 
 % Begin Detection
 
