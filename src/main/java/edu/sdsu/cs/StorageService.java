@@ -33,7 +33,7 @@ public class StorageService {
     }
 
     public URL uploadFile(File file) {
-        String s3FileName = UUID.randomUUID().toString() + file.getName().substring(file.getName().lastIndexOf(".") + 1);
+        String s3FileName = UUID.randomUUID().toString() + file.getName().substring(file.getName().lastIndexOf("."));
         PutObjectRequest putObjectRequest = new PutObjectRequest(
                 bucketName,
                 s3FileName,

@@ -5,8 +5,8 @@ import edu.sdsu.cs.Models.CaptionLine;
 import edu.sdsu.cs.Models.Utterance;
 import lombok.extern.log4j.Log4j;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -39,7 +39,13 @@ public class Main {
             throw new RuntimeException("Not all inputs have been supplied");
         }
 
-        URL sourceFile = StorageService.getInstance().uploadFile(new File(mediaFilePath));
+        URL sourceFile = null;
+        try {
+            sourceFile = new URL("https://s3-us-west-2.amazonaws.com/speech-stitcher-source/9426b8c1-915f-482d-a692-439c5c57cb24.mp4");
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+//        URL sourceFile = StorageService.getInstance().uploadFile(new File(mediaFilePath));
         List<Utterance> utterances = new ArrayList<>();
         Utterance previousUtterance = null;
 
@@ -49,9 +55,12 @@ public class Main {
             for (CaptionLine line : lines) {
                 try {
                     List<String[]> edges = LineProcessor.getInstance().processCaptionLine(mediaFilePath, line);
-                    for (int i = 0; i < edges.size(); i++) {
+                    if (edges == null || edges.size() == 0) continue;
+                    String[] words = line.getText().split("[\\s|\\n]");
+
+                    for (int i = 0; i < Math.min(edges.size(), words.length); i++) {
                         String[] tsPair = edges.get(i);
-                        Utterance u = new Utterance(tsPair[0], tsPair[1], line.getText().split(" ")[i], sourceFile.toString());
+                        Utterance u = new Utterance(tsPair[0], tsPair[1], words[i], sourceFile.toString());
                         if (previousUtterance != null) previousUtterance.setNext(u);
 
                         utterances.add(u);

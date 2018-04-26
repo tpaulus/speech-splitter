@@ -28,4 +28,13 @@ public class LineProcessorTest {
             System.out.println(e);
         }
     }
+
+    @Test
+    public void testExternalMATLABFunction() throws Exception{
+        double a = 1;
+        double expected = a;
+
+        double result = LineProcessor.getInstance().getEng().feval("test_function", a);
+        assertEquals(expected, a, 0.001d);
+    }
 }

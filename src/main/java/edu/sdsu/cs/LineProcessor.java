@@ -13,14 +13,13 @@ import edu.sdsu.cs.Models.Utterance;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 
 import java.lang.reflect.Type;
-import java.time.Duration;
-import java.time.LocalTime;
-import org.apache.commons.lang3.time.DurationFormatUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * @author Tom Paulus
@@ -48,29 +47,41 @@ public class LineProcessor {
         return ourInstance;
     }
 
-    List<String[]> processCaptionLine(final String sourceFile, final CaptionLine line) throws ExecutionException, InterruptedException {
-        double[] edges = LineProcessor.getInstance().getEng().feval("findEdges.m", sourceFile, line.getText().split(" ").length);
-        List<String[]> edgePairs = new ArrayList<>();
+    static void writeUtterance(final String tableName, final Utterance utterance) {
+        Dynamo.getInstance().writeItem(tableName, utterance.asItem());
+    }
 
-        Duration clipStart = Duration.between(
-                LocalTime.MIN,
-                LocalTime.parse(line.getStart()));
+    List<String[]> processCaptionLine(final String sourceFile, final CaptionLine line) throws ExecutionException, InterruptedException {
+        Double clipStart = Double.parseDouble(line.getStart());
+        Double duration = Double.parseDouble(line.getDur());
+
+        // source_file, start (sec), dur (sec), num_words, demo
+        double[] edges = new double[0];
+        List<String[]> edgePairs = null;
+        try {
+            edges = LineProcessor.getInstance().getEng().feval("findEdges",
+                    sourceFile,
+                    clipStart,
+                    duration,
+                    line.getText().split("[\\s|\\n]").length,
+                    false);
+            edgePairs = new ArrayList<>();
+        } catch (ClassCastException e) {
+           log.warn(String.format("Problem finding roots for line -\"%s\"", line.getText()));
+           return null;
+        }
 
         for (int i = 0; i < edges.length; i += 2) {
-            Duration word_start = clipStart.plusMillis((long) edges[i]);
-            Duration word_end = clipStart.plusMillis((long) edges[i+1]);
-
+            // Edges come in pairs
+            Double word_start = clipStart + edges[i];
+            Double word_end = clipStart + edges[i + 1];
             edgePairs.add(new String[]{
-                    DurationFormatUtils.formatDurationHMS(word_start.toMillis()),
-                    DurationFormatUtils.formatDurationHMS(word_end.toMillis())
+                    DurationFormatUtils.formatDurationHMS((long) (word_start * 1000)),
+                    DurationFormatUtils.formatDurationHMS((long) (word_end * 1000))
             });
         }
 
         return edgePairs;
-    }
-
-    static void writeUtterance(final String tableName, final Utterance utterance){
-        Dynamo.getInstance().writeItem(tableName, utterance.asItem());
     }
 
     private static class Dynamo {
