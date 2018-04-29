@@ -52,8 +52,10 @@ public class Utterance {
         item.withString("source", source);
 
         Map<String, String> nextMap = new TreeMap<>();
-        nextMap.put("word", this.next.word);
-        nextMap.put("id", this.next.id);
+        if (this.next != null && this.next.word != null && this.next.id != null) {
+            nextMap.put("word", this.next.word);
+            nextMap.put("id", this.next.id);
+        }
         item.withMap("next", nextMap);
 
         return item;

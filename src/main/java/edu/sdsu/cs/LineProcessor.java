@@ -48,7 +48,7 @@ public class LineProcessor {
     }
 
     static void writeUtterance(final String tableName, final Utterance utterance) {
-        Dynamo.getInstance().writeItem(tableName, utterance.asItem());
+        Dynamo.getInstance().writeItem(String.format("ss-%s", tableName), utterance.asItem());
     }
 
     List<String[]> processCaptionLine(final String sourceFile, final CaptionLine line) throws ExecutionException, InterruptedException {

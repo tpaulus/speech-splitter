@@ -5,8 +5,8 @@ import edu.sdsu.cs.Models.CaptionLine;
 import edu.sdsu.cs.Models.Utterance;
 import lombok.extern.log4j.Log4j;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -39,16 +39,13 @@ public class Main {
             throw new RuntimeException("Not all inputs have been supplied");
         }
 
-        URL sourceFile = null;
-        try {
-            sourceFile = new URL("https://s3-us-west-2.amazonaws.com/speech-stitcher-source/9426b8c1-915f-482d-a692-439c5c57cb24.mp4");
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-//        URL sourceFile = StorageService.getInstance().uploadFile(new File(mediaFilePath));
+        log.info("Starting Video Processing");
+
+        URL sourceFile = StorageService.getInstance().uploadFile(new File(mediaFilePath));
+        log.info("Video Uploaded to S3");
+
         List<Utterance> utterances = new ArrayList<>();
         Utterance previousUtterance = null;
-
 
         try {
             CaptionLine[] lines = new Gson().fromJson(readFile(captionFilePath, Charset.defaultCharset()), CaptionLine[].class);
@@ -66,7 +63,7 @@ public class Main {
                         utterances.add(u);
                         previousUtterance = u;
                     }
-
+                    log.info("Processed Line - " + line.getText());
                 } catch (ExecutionException e) {
                     e.printStackTrace();
                 } catch (InterruptedException e) {
@@ -78,8 +75,12 @@ public class Main {
         }
 
         for (Utterance utterance : utterances) {
+            log.debug(utterance);
             LineProcessor.writeUtterance(speaker, utterance);
+            log.info(String.format("Pushed Word \"%s\" to DDB", utterance.getWord()));
         }
+
+        log.info(String.format("Finished Processing Video - Uploaded %d words", utterances.size()));
     }
 
     private static String readFile(String path, Charset encoding) throws IOException {

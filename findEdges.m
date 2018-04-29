@@ -12,7 +12,7 @@ if ~exist('demo','var')
     demo = false;
 end
 
-
+[y, Fs] = audioread(source_file);
 
 % ==== Edge Detection Config ====
 MIN_PEAK_HEIGHT_INIT = 0.100;
@@ -22,7 +22,6 @@ WINDOW_SIZE = ceil(Fs * 0.01);
 TEXT_OFFSET = -3;
 % ==== End Config ====
 
-[y, Fs] = audioread(source_file);
 sample = y(floor(Fs * (start + TEXT_OFFSET)): ceil(Fs * (start + dur + TEXT_OFFSET)));
 x = 1:length(sample);
 
